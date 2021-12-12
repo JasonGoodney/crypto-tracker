@@ -5,27 +5,31 @@
 //  Created by Jason Goodney on 2/27/21.
 //
 
-import Foundation
 import Combine
+import Foundation
 
 extension MarketView {
-    
     class ViewModel: ObservableObject {
-        
         // MARK: - Properties
+        
+        private var cancellables = Set<AnyCancellable>()
+        
+        private let dispatchGroup = DispatchGroup()
         
         @Published private(set) var globalMarket: CoinGecko.GlobalMarket?
         
-        @Published private(set) var coins: [CoinGecko.CoinMarketData] = []
+        @Published private(set) var coins: [CoinGecko.Coin] = []
         
         @Published private(set) var globalStats = CoinRanking.GlobalStats()
         
-        @Published private(set) var pagingState = PagingState<CoinGecko.CoinMarketData>()
+        @Published private(set) var pagingState = PagingState<CoinGecko.Coin>()
+        
+        @Published private(set) var networkError: NetworkError?
         
         @Published var isLoading = false {
             didSet {
-                if oldValue == false && isLoading == true {
-                    self.getAll()
+                if oldValue == false, isLoading == true {
+                    getAll()
                 }
             }
         }
@@ -38,14 +42,11 @@ extension MarketView {
                 getCoins()
             }
         }
-
-        private let dispatchGroup = DispatchGroup()
-    
-        private var subscriptions = Set<AnyCancellable>()
         
         // MARK: - Methods
         
         func getAll() {
+            isLoading = true
             
             getCoins()
             getGlobalStats()
@@ -62,25 +63,25 @@ extension MarketView {
             dispatchGroup.enter()
             
             DataLoader<CoinGeckoAPI>()
-                .request([CoinGecko.CoinMarketData].self,
+                .request([CoinGecko.Coin].self,
                          from: .coins(.markets, sortBy: sort, page: pagingState.page))
                 .sink(receiveCompletion: { [weak self] completion in
+                    self?.dispatchGroup.leave()
+                    
                     switch completion {
                     case .finished:
                         break
                     case .failure(let error):
                         print(error)
+                        self?.networkError = error
                         self?.pagingState.canLoadNextPage = false
                     }
                 
-                    self?.dispatchGroup.leave()
-                    
                 }, receiveValue: onReceive)
-                .store(in: &subscriptions)
+                .store(in: &cancellables)
         }
         
         func getGlobalMarket() {
-            
             dispatchGroup.enter()
             
             DataLoader<CoinGeckoAPI>()
@@ -88,11 +89,10 @@ extension MarketView {
                 .sink(receiveCompletion: onReceive) { [weak self] root in
                     self?.globalMarket = root.globalMarket
                 }
-                .store(in: &subscriptions)
+                .store(in: &cancellables)
         }
         
         func getGlobalStats() {
-            
             dispatchGroup.enter()
             
             DataLoader<CoinRankingAPI>()
@@ -100,26 +100,24 @@ extension MarketView {
                 .sink(receiveCompletion: onReceive) { [weak self] coinRanking in
                     self?.globalStats = coinRanking.data
                 }
-                .store(in: &subscriptions)
+                .store(in: &cancellables)
         }
         
         private func onReceive(_ completion: Subscribers.Completion<NetworkError>) {
+            dispatchGroup.leave()
+            
             switch completion {
             case .finished:
                 break
             case .failure(let error):
                 print(error)
             }
-        
-            dispatchGroup.leave()
         }
         
-        private func onReceive(_ batch: [CoinGecko.CoinMarketData]) {
+        private func onReceive(_ batch: [CoinGecko.Coin]) {
             pagingState.items += batch
             pagingState.page += 1
             pagingState.canLoadNextPage = batch.count == CoinGeckoAPI.pageSize
         }
     }
-    
 }
-

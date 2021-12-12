@@ -8,28 +8,33 @@
 import SwiftUI
 
 struct SettingsView: View {
-    
-    @ObservedObject private var viewModel = ViewModel()
+    @StateObject private var viewModel = ViewModel()
         
     var body: some View {
         NavigationView {
-            List {
-                Section(header: Text("Watchlist")) {
-    
-                    if viewModel.watchlist.isEmpty {
-                        EmptyWatchlistView()
-                    } else {
-                        ForEach(viewModel.watchlist, id: \.self) {
-                            Text($0.capitalized)
+            VStack {
+                List {
+                    Section(header: Text("Watchlist")) {
+                        if viewModel.watchlist.isEmpty {
+                            EmptyWatchlistView()
+                        } else {
+                            ForEach(viewModel.watchlist, id: \.self) {
+                                Text($0.name.capitalized)
+                            }
+                            .onDelete(perform: delete)
                         }
-                        .onDelete(perform: delete)
+                    }
+                    
+                    HStack {
+                        Text("Version")
+                        Spacer()
+                        Text(AppVersion.getCurrent())
                     }
                 }
                 
             }
             .navigationBarTitle("Settings")
             .listStyle(InsetGroupedListStyle())
-            
         }
         .onAppear(perform: {
             viewModel.loadFromUserDefaults()

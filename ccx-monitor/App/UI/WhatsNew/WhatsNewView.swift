@@ -8,13 +8,10 @@
 import SwiftUI
 
 struct WhatsNewView: View {
-    
     @Environment(\.presentationMode) var presentationMode: Binding<PresentationMode>
     
-    var body: some View
-    {
+    var body: some View {
         VStack {
-            
             Spacer()
             
             Text("What's New")
@@ -22,22 +19,21 @@ struct WhatsNewView: View {
                 .fontWeight(.black)
                 .padding(.bottom, 20)
             
-        
             VStack(alignment: .leading, spacing: 30) {
                 WhatsNewItemView(imageName: "newspaper.fill",
-                             imageColor: Color.caribbeanGreen,
-                             headline: "Latest News",
-                             subHeadline: "Stay up to date on the cryptocurrency news")
+                                 imageColor: Color.caribbeanGreen,
+                                 headline: "Latest News",
+                                 subHeadline: "Stay up to date on the cryptocurrency news")
                 
                 WhatsNewItemView(imageName: "house.fill",
-                             imageColor: Color.razzmattazz,
-                             headline: "Home Tab",
-                             subHeadline: "Watchlist, top coins, top gainers, top losers, and news")
+                                 imageColor: Color.razzmattazz,
+                                 headline: "Home Tab",
+                                 subHeadline: "Watchlist, top coins, top gainers, top losers, and news")
                 
                 WhatsNewItemView(imageName: "mail.stack.fill",
-                             imageColor: Color.dodgerBlue,
-                             headline: "Widgets",
-                             subHeadline: "For a quick glance, add a widget to your home screen")
+                                 imageColor: Color.dodgerBlue,
+                                 headline: "Widgets",
+                                 subHeadline: "For a quick glance, add a widget to your home screen")
             }
             .padding(.bottom, 100)
         
@@ -47,7 +43,6 @@ struct WhatsNewView: View {
                 Text("Continue")
             }
             .buttonStyle(PrimaryButtonStyle())
-            
         }
         .frame(maxHeight: .infinity)
         .padding(.horizontal, 40)

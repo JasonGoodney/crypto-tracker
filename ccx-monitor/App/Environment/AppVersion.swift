@@ -5,12 +5,15 @@
 //  Created by Jason Goodney on 3/8/21.
 //
 
+// swiftlint:disable all
+
 import Foundation
 
 struct AppVersion {
     static func getCurrent() -> String {
-        let appVersion = Bundle.main.infoDictionary?["CFBundleShortVersionString"]
-        let version = (appVersion as! String)
+        guard let appVersion = Bundle.main.infoDictionary?["CFBundleShortVersionString"] else { return ""}
+        
+        let version = appVersion as! String
 
         return version
     }
@@ -27,3 +30,5 @@ struct AppVersion {
         }
     }
 }
+
+// swiftlint:enable all

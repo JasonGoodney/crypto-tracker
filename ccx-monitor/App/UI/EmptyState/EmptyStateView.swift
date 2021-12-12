@@ -22,7 +22,6 @@ enum EmptyState {
 }
 
 struct EmptyStateView: View {
-    
     let emptyState: EmptyState = .none
     
     let textOffsetY: CGFloat = -200
@@ -36,28 +35,25 @@ struct EmptyStateView: View {
     let foregroundColor: Color = .gullGray
     
     var body: some View {
-        
-            ZStack {
+        ZStack {
+            Text(emptyState.text)
+                .font(.largeTitle)
+                .fontWeight(.black)
+                .multilineTextAlignment(.center)
+                .foregroundColor(foregroundColor)
+                .offset(x: 0,
+                        y: textOffsetY)
+                .padding(.horizontal)
                 
-                Text(emptyState.text)
-                    .font(.largeTitle)
-                    .fontWeight(.black)
-                    .multilineTextAlignment(.center)
-                    .foregroundColor(foregroundColor)
-                    .offset(x: 0,
-                            y: textOffsetY)
-                    .padding(.horizontal)
-                
-                Image(Icon.logo.rawValue)
-                    .resizable()
-                    .renderingMode(.template)
-                    .foregroundColor(foregroundColor)
-                    .frame(width: iconSize,
-                           height: iconSize)
-                    .offset(x: iconOffsetX,
-                            y: iconOffsetY)
-            }
-
+            Image(Icon.logo.rawValue)
+                .resizable()
+                .renderingMode(.template)
+                .foregroundColor(foregroundColor)
+                .frame(width: iconSize,
+                       height: iconSize)
+                .offset(x: iconOffsetX,
+                        y: iconOffsetY)
+        }
     }
 }
 

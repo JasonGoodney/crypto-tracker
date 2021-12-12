@@ -5,24 +5,25 @@
 //  Created by Jason Goodney on 9/28/20.
 //
 
+// swiftlint:disable type_name
+
 import SwiftUI
 
 @main
 struct ccx_monitorApp: App {
     
     @UIApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
-        
-    @StateObject var appStateContainer = AppStateContainer()
+            
+    @StateObject var userState = UserState()
     
     var body: some Scene {
         WindowGroup {
             ContentView()
-                .environmentObject(AppUserDefaults.shared)
-//                .environmentObject(appStateContainer)
-//                .environmentObject(appStateContainer.tabViewState)
+                .environmentObject(userState)
         }
     }
 }
 
 
 //https://icon-icons.com/icon/generic-crypto-cryptocurrency-cryptocurrencies-cash-money-bank-payment/95038
+// swiftlint:enable type_name

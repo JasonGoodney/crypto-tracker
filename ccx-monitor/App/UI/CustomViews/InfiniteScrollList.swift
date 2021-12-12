@@ -7,9 +7,7 @@
 
 import SwiftUI
 
-struct InfiniteScrollList<T, Content>:
-    View where T: Identifiable, T: Equatable, Content: View {
-    
+struct InfiniteScrollList<T, Content>: View where T: Identifiable, T: Equatable, Content: View {
     @Environment(\.presentationMode) var presentationMode
     
     let content: (T) -> Content
@@ -17,7 +15,7 @@ struct InfiniteScrollList<T, Content>:
     var itemLimitReached: Bool
     let isLoading: Bool
     let onScrolledAtBottom: () -> Void
-    var onRowTapped: ((T) -> Void)? = nil
+    var onRowTapped: ((T) -> Void)?
     
     @GestureState private var isDragging = false
     
@@ -27,7 +25,6 @@ struct InfiniteScrollList<T, Content>:
          onScrolledAtBottom: @escaping () -> Void,
          onRowTapped: ((T) -> Void)? = nil,
          @ViewBuilder content: @escaping (T) -> Content) {
-        
         self.items = items
         self.itemLimitReached = itemLimitReached
         self.isLoading = isLoading

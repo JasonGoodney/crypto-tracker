@@ -6,165 +6,222 @@
 //
 
 import SwiftUI
+import BetterSafariView
 
 struct CoinDetailView: View {
-    
     @State private var isInWatchlist = false
     
+    @State private var selectedNewsArticle: CryptoPanic.NewsArticle?
+    
+    @State var backgroundColor: Color = .clear
+    
+    @State var showTopView = true
+    
+    @StateObject private var viewModel: ViewModel
+
     @Environment(\.presentationMode) var presentationMode
     
-    @EnvironmentObject var appUserDefaults: AppUserDefaults
-    
-    @ObservedObject private var viewModel: ViewModel
-         
-    init(coin: CoinGecko.CoinMarketData) {
-        self.viewModel  = ViewModel(coin: coin)
+    @EnvironmentObject var userState: UserState
+
+    init(coinGeckoId: String, coinSymbol: String) {
+        _viewModel = StateObject(wrappedValue: ViewModel(coinGeckoId: coinGeckoId, coinSymbol: coinSymbol))
     }
-    
+         
     var body: some View {
+//        ZStack(alignment: .topTrailing) {
         NavigationView {
-            ScrollView {
+
+            ScrollView(showsIndicators: false) {
                 VStack {
-                    AsyncImage(url: URL(string: viewModel.coin.marketData.image!)!,
-                                placeholder: {
-                                        Image(systemName: "bitcoinsign.circle.fill")
-                                            .resizable()
-                                },
-                                image: {
-                                        Image(uiImage: $0)
-                                            .resizable()
-                                })
-                        .frame(width: 32, height: 32)
-                    Text(viewModel.coin.marketData.name)
-                    Text(viewModel.coin.marketData.symbol.uppercased())
+//                    viewModel.coin.map { coin in
+//                        CoinDetailHeroView(coin: coin,
+//                                           showTopView: $showTopView)
+//                    }
                     
-                    LazyVStack(alignment: .leading) {
-                        
-                        Text("Related News")
-                            .sectionTitleStyle()
-                            .padding(.bottom)
-                          
-                        ForEach(viewModel.topNews) { newsArticle in
-                            NewsArticleRow(newsArticle: newsArticle)
-                        }
-                        
-                    }
-                    .padding(.horizontal)
+                    statistics24h
+                    
+                    statisticsMarket
+                    
+                    websites
+                    
+                    relatedNews
                 }
             }
-            .navigationBarItems(
-                trailing:
-                    HStack(alignment: .center, spacing: 20) {
-                        addToWatchlistButton
-                        dismissButton
+            .toolbar {
+                ToolbarItem(placement: .navigationBarLeading) {
+                    HStack {
+                        icon
+                        name
                     }
-                    .padding(.top, 10)
-            )
+                }
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    trailingBarItems
+                }
+                
+            }
+            
+//            if showTopView {
+//                HStack {
+//                    icon
+//                    name
+//                    Spacer()
+//
+//                    trailingBarItems
+//                }
+//                .padding([.bottom, .horizontal])
+//                .background(BlurBackground())
+//            }
+            
+//            trailingBarItems
+//                .padding(.trailing)
         }
+        .edgesIgnoringSafeArea(.top)
+        .redacted(reason: viewModel.isLoading ? .placeholder : [])
+        .disabled(viewModel.isLoading)
         .onAppear {
-            viewModel.getCoin()
-            viewModel.getNews()
-            viewModel.loadFromUserDefaults()
+            viewModel.getAll()
+            isInWatchlist = userState.watchlist.contains(where: { $0.coinGeckoId == viewModel.coinGeckoId })
+        }
+        .safariView(item: $selectedNewsArticle) { newsArticle in
+            SafariView(url: newsArticle.url)
+        }
+        .interactiveDismissDisabled()
+    }
+    
+    private var icon: some View {
+        viewModel.coin.map { coin in
+//            AsyncImage(url: URL(string: coin.image!)!,
+//                       placeholder: {
+//                           Image(systemName: "bitcoinsign.circle.fill").resizable()
+//                       },
+//                       image: {
+//                           Image(uiImage: $0).resizable()
+//                       })
+            AsyncImage(url: URL(string: coin.image!)!, scale: 2) { image in
+                image.resizable()
+            } placeholder: {
+                Image(systemName: "bitcoinsign.circle.fill")
+                 .resizable()
+            }
+                .frame(width: 32, height: 32)
+        }
+    }
+
+    private var name: some View {
+        viewModel.coin.map { coin in
+            Text(coin.name)
+                .bold()
+                .shadow(color: Color.gray,
+                        radius: 1.0)
+        }
+    }
+    
+    private var statistics24h: some View {
+        viewModel.coin.map { coin in
+            StatisticList(title: "Price (24h)",
+                          statistics: [
+                              (name: "24h Volume", value: coin.marketCapChange24H?.toCurrency()),
+                              (name: "High", value: coin.high24H?.toCurrency()),
+                              (name: "Low", value: coin.low24H?.toCurrency()),
+                              (name: "Change", value: coin.priceChange24H?.toCurrency())
+                          ])
+                .padding()
+        }
+    }
+    
+    private var statisticsMarket: some View {
+        viewModel.coin.map { coin in
+            StatisticList(title: "Market Stats",
+                          statistics: [
+                              (name: "Rank", value: "\(coin.marketCapRank.map(String.init) ?? "-")"),
+                              (name: "Circulating", value: coin.marketCap?.toCurrency()),
+                              (name: "Max Supply", value: coin.maxSupply?.toCurrency()),
+                              (name: "Total Supply", value: coin.totalSupply?.toCurrency())
+                          ])
+                .padding()
+        }
+    }
+    
+    private var websites: some View {
+        viewModel.coinPlusPlus?.links.map { links in
+            VStack(alignment: .leading) {
+                Text("Community")
+                    .sectionHeadline2Style()
+
+                LazyVStack {
+                    WebsiteList(links: links)
+                }
+            }
+            .padding()
+        }
+    }
+    
+    private var relatedNews: some View {
+        viewModel.topNews.map { news in
+            LazyVStack(alignment: .center) {
+                HStack {
+                    Text("Related News")
+                        .sectionHeadline2Style()
+                    
+                    Spacer()
+                }
+                  
+                ForEach(news) { newsArticle in
+                    NewsArticleRow(newsArticle: newsArticle)
+                        .onTapGesture {
+                            onRowTapped(newsArticle)
+                        }
+                }
+            }
+            .padding(.horizontal)
         }
     }
     
     private var addToWatchlistButton: some View {
-        LikeButton(action: { _ in
-//            var watchlist = UserDefaults.standard.value(for: .watchlist) as? [String] ?? []
-            var watchlist = AppUserDefaults.shared.watchlist
-            let id = viewModel.coin.marketData.coinGeckoId.lowercased()
-            if watchlist.contains(id) {
-//                deleteFromUserDefaults(viewModel.coin)
-                delete(id, from: &watchlist)
-//                AppUserDefaults.shared.watchlist = watchlist
-//                isInWatchlist = false
-                print("removed to watchlist")
-            } else {            
-//                addToUserDefaults(viewModel.coin)
-                add(id, to: &watchlist)
-//                AppUserDefaults.shared.watchlist = watchlist
+        viewModel.coin.map { coin in
+            LikeButton(isPressed: isInWatchlist, action: { _ in
+                if userState.watchlist.contains(coin) {
+                    userState.watchlist
+                        .removeAll(where: { $0.coinGeckoId == coin.coinGeckoId })
+                } else {
+                    userState.watchlist.append(coin)
+                }
                 
-//                isInWatchlist = true
-                print("added to watchlist")
-            }
+                AppUserDefaults.shared.watchlist = userState.watchlist
+            })
+            .frame(width: 32, height: 32)
+                
             
-            appUserDefaults.watchlist = watchlist
-        })
-        
+        }
     }
     
     private var dismissButton: some View {
-        BarButtonItem(symbolName: "xmark.circle.fill") {
+        Button(action: {
             presentationMode.wrappedValue.dismiss()
-        }
-    }
-    
-    
-    func deleteFromUserDefaults(_ coin: CoinGecko.Coin) {
-        var watchlist = AppUserDefaults.shared.watchlist
-        let id = coin.marketData.coinGeckoId.lowercased()
-        watchlist.removeAll(where: { $0 == id })
-//            UserDefaults.standard.set(watchlist, for: .watchlist)
-        isInWatchlist = false
-        AppUserDefaults.shared.watchlist = watchlist
-    }
-    
-    func delete(_ id: String, from watchlist: inout [String]) {
-        watchlist.removeAll(where: { $0 == id })
-    }
-    
-    func add(_ id: String, to watchList: inout [String]) {
-        watchList.append(id)
-    }
-    
-    func addToUserDefaults(_ coin: CoinGecko.Coin) {
-        var watchlist = AppUserDefaults.shared.watchlist
-        let id = coin.marketData.coinGeckoId.lowercased()
-        watchlist.append(id)
-//            UserDefaults.standard.set(watchlist, for: .watchlist)
-        AppUserDefaults.shared.watchlist = watchlist
-        isInWatchlist = true
-    }
-}
-
-struct BarButtonItem: View {
-    
-    var text: String? = nil
-    
-    var symbolName: String? = nil
-    
-    var handleOnTap: () -> Void
-    
-    init(text: String,
-         handleOnTap: @escaping () -> Void) {
-        
-        self.text = text
-        self.handleOnTap = handleOnTap
-    }
-    
-    init(symbolName: String,
-         handleOnTap: @escaping () -> Void) {
-        
-        self.symbolName = symbolName
-        self.handleOnTap = handleOnTap
-    }
-    
-    var body: some View {
-        Button(action: handleOnTap) {
-            if let text = text {
-                Text(text)
-            } else if let symbolName = symbolName {
-                Image(systemName: symbolName)
+        }, label: {
+            Image(systemName: "xmark.circle.fill")
                 .resizable()
-                .frame(width: 32, height: 32)
-                .foregroundColor(Color.black.opacity(0.3))
-            }
+        })
+        .buttonStyle(NavigationButtonStyle())
+    }
+    
+    private var trailingBarItems: some View {
+        HStack(alignment: .center, spacing: 20) {
+            addToWatchlistButton
+            dismissButton
         }
+//        .padding(.top, 10)
+    }
+    
+    private func onRowTapped(_ newsArticle: CryptoPanic.NewsArticle) {
+        selectedNewsArticle = newsArticle
     }
 }
 
 struct CoinDetailView_Previews: PreviewProvider {
     static var previews: some View {
-        CoinDetailView(coin: CoinGecko.CoinMarketData.default)
+        CoinDetailView(coinGeckoId: CoinGecko.Coin.example.coinGeckoId,
+                       coinSymbol: CoinGecko.Coin.example.symbol)
+            .environmentObject(UserState())
     }
 }

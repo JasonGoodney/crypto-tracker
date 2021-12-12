@@ -5,6 +5,8 @@
 //  Created by Jason Goodney on 3/1/21.
 //
 
+// swiftline:disable all
+
 import Foundation
 
 enum Language: String {
@@ -24,7 +26,7 @@ enum Language: String {
     case ru
     case ja
     case zh
-    case zh_tw = "zh-tw"
+//    case zh_tw = "zh-tw"
     case ko
     case ar
     case th
@@ -34,3 +36,5 @@ enum Language: String {
 extension Language {
     static let preferred = Bundle.main.preferredLocalizations.first?.prefix(2) ?? "en"
 }
+
+// swiftline:enable all

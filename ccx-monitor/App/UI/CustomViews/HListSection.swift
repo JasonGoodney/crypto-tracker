@@ -27,7 +27,7 @@ struct HListSection<T, Content>: View where T: Identifiable, Content: View {
         VStack(alignment: .leading) {
             Text(title)
                 .sectionTitleStyle()
-                .padding(.horizontal)
+
             ScrollView(.horizontal, showsIndicators: false) {
                 LazyHStack {
                     ForEach(items) {

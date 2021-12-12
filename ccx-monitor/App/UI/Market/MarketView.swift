@@ -5,35 +5,32 @@
 //  Created by Jason Goodney on 2/22/21.
 //
 
-import SwiftUI
 import Combine
+import SwiftUI
 
 struct MarketView: View {
-    
+    @Namespace var topID
+
     @StateObject private var viewModel = ViewModel()
     
     @State private var showActionSheet = false
     
-    @State private var selectedCoin: CoinGecko.CoinMarketData? = nil
-    
-    @Namespace var topID
+    @State private var selectedCoin: CoinGecko.Coin?    
     
     var body: some View {
         NavigationView {
-
             Group {
-                if viewModel.pagingState.items.isEmpty {
-                    EmptyStateView()
-                } else {
-                    ScrollView {
-                        MarketHeaderView(viewModel: viewModel)
+                ScrollView {
+                    MarketHeaderView(viewModel: viewModel)
 
-                        Divider()
+                    Divider()
                         
-                        MarketListView(viewModel: viewModel)
-                    }
+                    MarketListView(viewModel: viewModel,
+                                   selectedCoin: $selectedCoin)
                 }
             }
+            .redacted(reason: viewModel.isLoading ? .placeholder : [])
+            .disabled(viewModel.isLoading)
             .navigationTitle("Market")
             .navigationBarItems(
                 trailing: Button(action: {
@@ -44,8 +41,10 @@ struct MarketView: View {
             )
             .actionSheet(isPresented: $showActionSheet) {
                 ActionSheet(title: Text("Sort By"),
-                            buttons: actionSheetButtons()
-                )
+                            buttons: actionSheetButtons())
+            }
+            .fullScreenCover(item: $selectedCoin) { coin in
+                CoinDetailView(coinGeckoId: coin.coinGeckoId, coinSymbol: coin.symbol)
             }
         }
         .onAppear(perform: {
@@ -60,9 +59,9 @@ struct MarketView: View {
             Alert.Button.default(Text(sort.text)) {
                 withAnimation {
                     viewModel.sort = sort
-                    
                 }
-        }}
+            }
+        }
         
         buttons.append(contentsOf: defaultButtons)
         
@@ -70,20 +69,36 @@ struct MarketView: View {
     }
 }
 
-struct MarketsView_Previews: PreviewProvider {
+struct MarketView_Previews: PreviewProvider {
     static var previews: some View {
         MarketView()
     }
 }
 
-
-fileprivate extension MarketView {
-    
+private extension MarketView {
     struct MarketHeaderView: View {
-        
         @ObservedObject var viewModel: ViewModel
         
+        @Environment(\.sizeCategory) var sizeCategory
+        
         var body: some View {
+            Group {
+                switch sizeCategory {
+                case .accessibilityMedium,
+                     .accessibilityLarge,
+                     .accessibilityExtraLarge,
+                     .accessibilityExtraExtraLarge,
+                     .accessibilityExtraExtraExtraLarge:
+                    layoutForAccessibilitySizeCategories
+                default:
+                    mainLayout
+                }
+            }
+            .padding(.vertical, 10)
+            .padding(.horizontal)
+        }
+        
+        private var mainLayout: some View {
             HStack(alignment: .center) {
                 StatHeaderView(
                     headline: "Market Cap",
@@ -95,8 +110,7 @@ fileprivate extension MarketView {
 
                 StatHeaderView(
                     headline: "24H Volume",
-                    value: viewModel.globalStats.total24hVolume.abbreviated,
-                    valueChange: viewModel.globalMarket?.marketCapChangePercentage24HUsd)
+                    value: viewModel.globalStats.total24hVolume.abbreviated)
 
                 Spacer()
                 Divider()
@@ -106,32 +120,49 @@ fileprivate extension MarketView {
                     headline: "BTC Dominance",
                     value: "\(viewModel.globalMarket?.btcDominance.round(to: 2) ?? 0)%")
             }
-            .padding(.vertical, 10)
-            .padding(.horizontal)
+        }
+        
+        private var layoutForAccessibilitySizeCategories: some View {
+            HStack {
+                VStack(alignment: .leading, spacing: 16) {
+                    StatHeaderView(
+                        headline: "Market Cap",
+                        value: viewModel.globalStats.totalMarketCap.abbreviated)
+
+                    StatHeaderView(
+                        headline: "24H Volume",
+                        value: viewModel.globalStats.total24hVolume.abbreviated)
+                    
+                    StatHeaderView(
+                        headline: "BTC Dominance",
+                        value: "\(viewModel.globalMarket?.btcDominance.round(to: 2) ?? 0)%")
+                }
+                
+                Spacer()
+            }
         }
     }
 
     struct MarketListView: View {
-        
         @ObservedObject var viewModel: ViewModel
         
+        @Binding var selectedCoin: CoinGecko.Coin?
+        
         var body: some View {
-            InfiniteScrollList<CoinGecko.CoinMarketData, ListingRow>(
+            InfiniteScrollList<CoinGecko.Coin, ListingRow>(
                 items: viewModel.pagingState.items,
                 isLoading: viewModel.pagingState.canLoadNextPage,
                 onScrolledAtBottom: viewModel.getCoins,
                 onRowTapped: { coin in
-                    print(coin.name)
+                    selectedCoin = coin
                 }, content: { coin -> ListingRow in
                     ListingRow(listing: coin, measure: viewModel.sort.measure)
-                }
-            )
-            .padding(.horizontal)
+                })
+                .padding(.horizontal)
         }
     }
     
     struct MarketSortView: View {
-        
         let sort: CoinGeckoAPI.SortBy
         
         var symbolName: String {
@@ -140,7 +171,6 @@ fileprivate extension MarketView {
                 return "chevron.down"
             case .marketCapAscending, .volumeAscending:
                 return "chevron.up"
-
             }
         }
         
@@ -151,6 +181,4 @@ fileprivate extension MarketView {
             }
         }
     }
-
-
 }

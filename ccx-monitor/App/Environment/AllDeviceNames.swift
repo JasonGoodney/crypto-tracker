@@ -6,6 +6,9 @@
 //  Copyright © 2019 RoLYroLLs Enterprises, LLC. All rights reserved.
 //
 /// Taken from https://developer.apple.com/documentation/swiftui/securefield/3289399-previewdevice
+
+// swiftlint:disable all
+
 // All devices
 enum AllDeviceNames: String, CaseIterable {
     case Mac = "Mac"
@@ -147,3 +150,5 @@ enum AppleWatchDeviceNames: String, CaseIterable {
         return AppleWatchDeviceNames.allCases.map { $0.rawValue }
     }
 }
+
+// swiftlint:enable all

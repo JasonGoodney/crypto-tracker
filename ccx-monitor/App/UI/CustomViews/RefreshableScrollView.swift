@@ -5,6 +5,8 @@
 //  Created by Jason Goodney on 2/27/21.
 //
 
+// swiftlint:disable identifier_name [type_name]
+
 import SwiftUI
 
 // Authoer: The SwiftUI Lab
@@ -169,3 +171,4 @@ struct ActivityRep: UIViewRepresentable {
     }
 }
 
+// swiftlint:enable identifier_name [type_name]

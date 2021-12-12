@@ -13,7 +13,7 @@ extension SettingsView {
         
         // MARK: - Properties
         
-        @Published var watchlist: [String] = []
+        @Published var watchlist: [CoinGecko.Coin] = []
         
         // MARK: Methods
         

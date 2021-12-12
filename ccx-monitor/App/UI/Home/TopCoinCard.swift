@@ -7,15 +7,57 @@
 
 import SwiftUI
 
+extension View {
+    
+    func cardStyle(backgroundColor: Color = Color(UIColor.systemBackground),
+                   width: CGFloat? = nil,
+                   height: CGFloat? = nil) -> some View {
+        
+        self
+            .padding()
+            .font(.title)
+            .background(backgroundColor)
+            .cornerRadius(16)
+            .shadow(color: Color.black.opacity(0.1), radius: 8, x: 0, y: 4)
+            .contentShape(Rectangle())
+    }
+}
+
 struct TopCoinCard: View {
     
-    let coin: CoinGecko.CoinMarketData
+    let coin: CoinGecko.Coin
     
     var showVolume = false
     
     @Environment(\.colorScheme) var colorScheme
+    @Environment(\.sizeCategory) var sizeCategory
     
+    var backgroundColor: Color {
+        return colorScheme == .dark
+            ? Color(UIColor(red: 24/255, green: 25/255, blue: 28/255, alpha: 1))
+            : Color(UIColor.systemBackground)
+    }
+
     var body: some View {
+            switch sizeCategory {
+            case .accessibilityMedium,
+                 .accessibilityLarge,
+                 .accessibilityExtraLarge,
+                 .accessibilityExtraExtraLarge,
+                 .accessibilityExtraExtraExtraLarge:
+                
+                mainLayout
+                    .frame(width: 300)
+                    .cardStyle(backgroundColor: backgroundColor)
+            default:
+                mainLayout
+                    .frame(width: 130, height: 160)
+                    .cardStyle(backgroundColor: backgroundColor)
+
+            }
+    }
+    
+    private var mainLayout: some View {
         HStack {
             VStack(alignment: .leading) {
                 if let imageUrl = coin.image {
@@ -26,33 +68,27 @@ struct TopCoinCard: View {
                 VStack(alignment: .leading, spacing: 4) {
                     Text(coin.name)
                         .font(.title3)
-                        .lineLimit(1)
+                        .minimumScaleFactor(0.8)
+                        .lineLimit(2)
+                    
                     Text("\(!showVolume ? coin.currentPrice.toCurrency() : (coin.totalVolume ?? 0).toCurrency())")
                         .font(.headline)
+                        .layoutPriority(1)
                 }
                 Spacer()
                 if let percentage = coin.priceChangePercentage24H {
                     PercentChangeLabel(value: percentage.decimals(2))
                 }
             }
-            
             Spacer()
         }
-        .frame(width: 130, height: 160)
-        .padding()
-        .font(.title)
-        .background(colorScheme == .dark
-                        ? Color(UIColor(red: 24/255, green: 25/255, blue: 28/255, alpha: 1))
-                        : Color(UIColor.systemBackground))
-        .cornerRadius(16)
-        .shadow(color: Color.black.opacity(0.1), radius: 8, x: 0, y: 4)
-        .contentShape(Rectangle())
     }
 }
 
 struct TopCoinCard_Previews: PreviewProvider {
     static var previews: some View {
-        TopCoinCard(coin: CoinGecko.CoinMarketData.default)
+        TopCoinCard(coin: CoinGecko.Coin.example)
+            .environment(\.sizeCategory, .accessibilityExtraExtraExtraLarge)
     }
 }
 

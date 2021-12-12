@@ -8,7 +8,6 @@
 import SwiftUI
 
 struct StatHeaderView: View {
-    
     let headline: String
     let value: String
     let valueChange: Double?
@@ -34,8 +33,6 @@ struct StatHeaderView: View {
             } else {
                 Spacer()
             }
-            
-            
         }
     }
 }
@@ -43,7 +40,7 @@ struct StatHeaderView: View {
 struct GlobalStatHeaderView_Previews: PreviewProvider {
     static var previews: some View {
         StatHeaderView(headline: "Market Cap",
-                             value: "1.47 T")
+                       value: "1.47 T")
     }
 }
 
@@ -84,6 +81,6 @@ extension UIColor {
 extension Double {
     func round(to places: Int) -> Double {
         let divisor = pow(10.0, Double(places))
-        return (self * divisor).rounded() / divisor
+        return (self * divisor).rounded()/divisor
     }
 }

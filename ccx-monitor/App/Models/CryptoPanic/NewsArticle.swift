@@ -31,7 +31,15 @@ extension CryptoPanic {
             case .reddit:
                 return URL(string: "https://\(source.domain)/\(domain)")!
             case .coinTelegraph:
-                return URL(string: "https://\(source.domain)/news/\(slug)")!
+                return URL(string: "https://\(source.domain)/news/\(slug.lowercased())")!
+            case .cryptoGlobe:
+                //2021-03-26T00:09:00Z
+                let dateFormatter = DateFormatter()
+                dateFormatter.dateFormat = "yyyy-MM-dd'T'HH:mm:ss'Z'"
+                let date = dateFormatter.date(from: publishedAt)!
+                dateFormatter.dateFormat = "yyyy/MM"
+                let yearMonth = dateFormatter.string(from: date)
+                return URL(string: "https://\(source.domain)/latest/\(yearMonth)/\(slug.lowercased())")!
             }
         }
         

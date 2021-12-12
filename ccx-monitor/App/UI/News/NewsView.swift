@@ -7,12 +7,15 @@
 
 import SwiftUI
 import Combine
+import BetterSafariView
 
 struct NewsView: View {
     
     @StateObject var viewModel = ViewModel()
         
     @State private var showActionSheet = false
+    
+    @State private var selectedNewsArticle: CryptoPanic.NewsArticle?
     
     @Environment(\.openURL) var openURL
 
@@ -24,30 +27,40 @@ struct NewsView: View {
                     itemLimitReached: viewModel.pageLimitReached,
                     isLoading: viewModel.pagingState.canLoadNextPage,
                     onScrolledAtBottom: viewModel.getNews,
+                    onRowTapped: onRowTapped,
                     content: {
                         NewsArticleRow(newsArticle: $0)
                     }
                 )
                 .padding()
             }
+            .redacted(reason: viewModel.isLoading ? .placeholder : [])
             .navigationBarTitle("\(viewModel.filter.text)")
-            .navigationBarItems(trailing: Button(action: {
-                showActionSheet = true
-            }, label: {
-                Image(systemName: "line.horizontal.3.decrease.circle")
-                    .resizable()
-                    .frame(width: 24, height: 24)
-            }))
+            .navigationBarItems(trailing: trailingBarItem)
             .actionSheet(isPresented: $showActionSheet) {
                 ActionSheet(title: Text("Filter By"),
                             buttons: actionSheetButtons()
                 )
             }
+            .disabled(viewModel.isLoading)
         }
-        .onAppear(perform: viewModel.onAppear)
+        .onAppear(perform: viewModel.getAll)
+        .safariView(item: $selectedNewsArticle) { newsArticle in
+            SafariView(url: newsArticle.url)
+        }
     }
     
-    func actionSheetButtons() -> [Alert.Button] {
+    private var trailingBarItem: some View {
+        Button(action: {
+            showActionSheet = true
+        }, label: {
+            Image(systemName: "line.horizontal.3.decrease.circle")
+                .resizable()
+                .frame(width: 24, height: 24)
+        })
+    }
+    
+    private func actionSheetButtons() -> [Alert.Button] {
         var buttons: [Alert.Button] = [.cancel()]
         
         let defaultButtons = CryptoPanicAPI.Filter.allCases.map { filter in Alert.Button.default(Text(filter.text)) {
@@ -57,6 +70,10 @@ struct NewsView: View {
         buttons.append(contentsOf: defaultButtons)
         
         return buttons
+    }
+    
+    private func onRowTapped(_ newsArticle: CryptoPanic.NewsArticle) {
+        selectedNewsArticle = newsArticle
     }
 }
 

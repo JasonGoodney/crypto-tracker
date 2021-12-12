@@ -6,13 +6,12 @@
 //
 
 import SwiftUI
-import BetterSafariView
 
 struct NewsArticleRow: View {
     
     let newsArticle: CryptoPanic.NewsArticle
-    
-    @State private var showSafariView = false
+        
+    @Environment(\.sizeCategory) var sizeCategory
         
     var body: some View {
         VStack {
@@ -20,42 +19,56 @@ struct NewsArticleRow: View {
                 VStack(alignment: .leading, spacing: 8) {
                     
                     if let currencies = newsArticle.currencies {
-                        HStack(spacing: 4) {
-                            ForEach(currencies, id: \.self) { currency in
-                                Text(currency.code)
-                                    .font(.caption2)
-                                    .fontWeight(.bold)
-                                    .foregroundColor(.white)
-                                    .padding(.vertical, 3)
-                                    .padding(.horizontal, 6)
-                                    .background(Color.dodgerBlue)
-                                    .clipShape(Capsule())
+                        ScrollView(.horizontal, showsIndicators: false) {
+                            HStack(spacing: 4) {
+                                ForEach(currencies, id: \.self) { currency in
+                                    Text(currency.code)
+                                        .font(.caption2)
+                                        .fontWeight(.bold)
+                                        .foregroundColor(.white)
+                                        .padding(.vertical, 3)
+                                        .padding(.horizontal, 6)
+                                        .background(Color.dodgerBlue)
+                                        .clipShape(Capsule())
+                                }
                             }
                         }
                     }
                     
                     Text(newsArticle.title)
-                        .fontWeight(.bold)
-                        
-                    HStack {
-                        Text(newsArticle.publishedAt.toDate().format(as: "MMMM d"))
-                        Text("•")
-                        Text(newsArticle.source.title)
-                            .fontWeight(.semibold)
+                        .fontWeight(.semibold)
+                    
+                    Group {
+                        switch sizeCategory {
+                        case .accessibilityMedium,
+                             .accessibilityLarge,
+                             .accessibilityExtraLarge,
+                             .accessibilityExtraExtraLarge,
+                             .accessibilityExtraExtraExtraLarge:
+                            
+                            VStack(alignment: .leading) {
+                                Text(newsArticle.publishedAt.toDate().format(as: "MMMM d"))
+
+                                Text(newsArticle.source.title)
+                                    .fontWeight(.semibold)
+                            }
+                        default:
+                            HStack {
+                                Text(newsArticle.publishedAt.toDate().format(as: "MMMM d"))
+                                Text("•")
+                                Text(newsArticle.source.title)
+                                    .fontWeight(.semibold)
+                            }
+                        }
                     }
                     .font(.callout)
                     .foregroundColor(.gray)
+                        
                 }
                 
                 Spacer()
             }
             Divider()
-        }
-        .onTapGesture {
-            showSafariView = true
-        }
-        .safariView(isPresented: $showSafariView) {
-            SafariView(url: newsArticle.url)
         }
     }
 }

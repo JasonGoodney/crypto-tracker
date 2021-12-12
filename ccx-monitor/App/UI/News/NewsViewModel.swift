@@ -5,21 +5,23 @@
 //  Created by Jason Goodney on 2/27/21.
 //
 
-import Foundation
 import Combine
+import Foundation
 
 extension NewsView {
-    
     class ViewModel: ObservableObject {
-        
         // MARK: - Properties
-                
+        
+        private var cancellables = Set<AnyCancellable>()
+        
+        private var dispatchGroup = DispatchGroup()
+        
         @Published var pagingState = PagingState<CryptoPanic.NewsArticle>(
             pageLimit: CryptoPanicAPI.pageLimit)
         
         @Published var pageLimitReached = false
         
-        private var subscriptions = Set<AnyCancellable>()
+        @Published private(set) var isLoading = false
         
         var filter: CryptoPanicAPI.Filter = .rising {
             didSet {
@@ -30,8 +32,13 @@ extension NewsView {
         
         // MARK: - Methods
         
-        func onAppear() {
+        func getAll() {
+            isLoading = true
             getNews()
+            
+            dispatchGroup.notify(queue: .main) { [weak self] in
+                self?.isLoading = false
+            }
         }
         
         func getNews() {
@@ -43,6 +50,8 @@ extension NewsView {
                 return
             }
             
+            dispatchGroup.enter()
+            
             let currencies: [String] = []
             
             DataLoader<CryptoPanicAPI>()
@@ -52,13 +61,14 @@ extension NewsView {
                                       page: pagingState.page))
                 .sink(receiveCompletion: onReceive,
                       receiveValue: { [weak self] root in
-                        self?.onReceive(root.results)
-                      }
-                )
-                .store(in: &subscriptions)
+                          self?.onReceive(root.results)
+                      })
+                .store(in: &cancellables)
         }
         
         private func onReceive(_ completion: Subscribers.Completion<NetworkError>) {
+            dispatchGroup.leave()
+            
             switch completion {
             case .finished:
                 break

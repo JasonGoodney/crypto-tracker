@@ -36,7 +36,6 @@ struct MarketCapChangePercentageTitle: View {
             }
         }
         .font(Font.title.weight(.bold))
-        .lineLimit(1)
     }
 
 }
@@ -44,5 +43,6 @@ struct MarketCapChangePercentageTitle: View {
 struct MarketCapChangePercentageTitle_Previews: PreviewProvider {
     static var previews: some View {
         MarketCapChangePercentageTitle(percentage: 6.54332)
+            .environment(\.sizeCategory, .accessibilityExtraExtraExtraLarge)
     }
 }

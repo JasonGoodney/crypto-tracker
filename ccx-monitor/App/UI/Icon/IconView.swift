@@ -12,15 +12,21 @@ struct IconView: View {
     let image: String
     
     var body: some View {
-        AsyncImage(url: URL(string: image)!,
-                    placeholder: {
-                        Image(Icon.logo.rawValue)
-                            .resizable()
-                    },
-                    image: {
-                        Image(uiImage: $0)
-                            .resizable()
-                    })
+//        AsyncImage(url: URL(string: image)!,
+//                    placeholder: {
+//                        Image(Icon.logo.rawValue)
+//                            .resizable()
+//                    },
+//                    image: {
+//                        Image(uiImage: $0)
+//                            .resizable()
+//                    })
+        AsyncImage(url: URL(string: image)!) { image in
+            image.resizable()
+        } placeholder: {
+            Image(Icon.logo.rawValue)
+             .resizable()
+        }
     }
 }
 

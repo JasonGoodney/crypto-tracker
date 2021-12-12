@@ -8,13 +8,13 @@
 import SwiftUI
 
 struct ContentView: View {
-    
     @EnvironmentObject var tabViewState: TabViewState
     
     @State private var showWhatsNew = false
     
     init() {
         UITabBar.appearance().tintColor = UIColor.label
+//        UINavigationBar.appearance().tintColor = UIColor.systemBackground
     }
     
     var body: some View {
@@ -30,30 +30,37 @@ struct ContentView: View {
     }
     
     private var tabView: some View {
-        TabView {
-            HomeView()
-                .tabItem {
-                    Label("Home", systemImage: "house.fill")
-                }
-                .tag(Tab.home)
+        VStack {
+            TabView {
+                HomeView()
+                    .tabItem {
+                        Label("Home", systemImage: "house.fill")
+                    }
+                    .tag(Tab.home)
 
-            MarketView()
-                .tabItem {
-                    Label("Market", systemImage: "square.stack.3d.up.fill")
-                }
-                .tag(Tab.markets)
+                MarketView()
+                    .tabItem {
+                        Label("Market", systemImage: "square.stack.3d.up.fill")
+                    }
+                    .tag(Tab.markets)
 
-            NewsView()
-                .tabItem {
-                    Label("News", systemImage: "newspaper.fill")
-                }
-                .tag(Tab.news)
+                NewsView()
+                    .tabItem {
+                        Label("News", systemImage: "newspaper.fill")
+                    }
+                    .tag(Tab.news)
+                
+                SearchView()
+                    .tabItem {
+                        Label("Search", systemImage: "magnifyingglass")
+                    }
 
-            SettingsView()
-                .tabItem {
-                    Label("Settings ", systemImage: "gearshape.fill")
-                }
-                .tag(Tab.settings)
+                SettingsView()
+                    .tabItem {
+                        Label("Settings ", systemImage: "gearshape.fill")
+                    }
+                    .tag(Tab.settings)
+            }
         }
     }
     
@@ -73,5 +80,6 @@ struct ContentView: View {
 struct ContentView_Previews: PreviewProvider {
     static var previews: some View {
         ContentView()
+            .environmentObject(UserState())
     }
 }

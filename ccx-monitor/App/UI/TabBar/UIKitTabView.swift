@@ -5,6 +5,8 @@
 //  Created by Jason Goodney on 3/13/21.
 //
 
+// swiftlint:disable identifier_name [type_name]
+
 import Foundation
 import SwiftUI
 
@@ -131,3 +133,5 @@ fileprivate struct TabBarController: UIViewControllerRepresentable {
         }
     }
 }
+
+// swiftlint:enable identifier_name [type_name]

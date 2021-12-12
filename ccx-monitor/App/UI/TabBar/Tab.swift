@@ -7,6 +7,6 @@
 
 import Foundation
 
-enum Tab {
+enum Tab: Int {
     case home, markets, news, settings
 }

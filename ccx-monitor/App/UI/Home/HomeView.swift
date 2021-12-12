@@ -8,93 +8,94 @@
 import SwiftUI
 
 struct HomeView: View {
- 
     @StateObject private var viewModel = ViewModel()
-        
-    @State private var isWatchlistCollapsed = true
     
-    @State private var selectedCoin: CoinGecko.CoinMarketData? = nil
+    @State private var selectedCoin: CoinGecko.Coin?
+    
+    @EnvironmentObject var userState: UserState
     
     var body: some View {
         NavigationView {
-            VStack(alignment: .leading) {
-                VStack(alignment: .leading) {
-                    NavigationBarTitleView()
-                    MarketCapChangePercentageTitle(percentage: viewModel.percentChange24h.decimals(2))
-                        
-                }
-                .padding(.leading)
+            ZStack {
+                EmptyStateView()
+                    .unredacted()
                 
-                ScrollView(showsIndicators: false) {
-                    LazyVStack(alignment: .leading, spacing: 32) {
+                VStack(alignment: .leading) {
+                    VStack(alignment: .leading) {
+                        TodaysDateTitle()
                         
-                        HomeWatchlist(viewModel: viewModel,
-                                      onCoinTapped: onCoinTapped)
-                        
-                        HListSection(title: "Top Coins",
-                                     items: viewModel.topCoins) { coin in
+                        MarketCapChangePercentageTitle(
+                            percentage: viewModel.percentChange24h.decimals(2))
+                    }
+                    .padding(.leading)
+                    
+                    ScrollView(showsIndicators: false) {
+                        LazyVStack(alignment: .leading, spacing: 32) {
+                            HomeWatchlist(viewModel: viewModel,
+                                          onCoinTapped: onCoinTapped)
                             
-                            NavigationLink(destination: CoinDetailView(coin: coin)) {
-                            TopCoinCard(coin: coin)
-                                .padding(.vertical)
-                                .padding(.horizontal, 10)
-//                                .onTapGesture { onCoinTapped(coin) }
+                            HListSection(title: "Top Coins",
+                                         items: viewModel.topCoins) { coin in
+                                
+                                TopCoinCard(coin: coin)
+                                    .padding(.bottom)
+                                    .padding(.trailing, 10)
+                                    .onTapGesture { onCoinTapped(coin) }
                             }
-                        }
-            
-                        HListSection(title: "Top Gainers",
-                                     items: viewModel.topGainers) { coin in
+                            .padding(.horizontal)
                             
-                            TopCoinCard(coin: coin)
-                                .padding(.vertical)
-                                .padding(.horizontal, 10)
-                                .onTapGesture { onCoinTapped(coin) }
-                        }
-                        
-                        HListSection(title: "Top Losers",
-                                     items: viewModel.topLosers) { coin in
-                            
-                            TopCoinCard(coin: coin)
-                                .padding(.vertical)
-                                .padding(.horizontal, 10)
-                                .onTapGesture { onCoinTapped(coin) }
-                        }
-                        
-                        LazyVStack(alignment: .leading) {
-                            
-                            Text("Top News")
-                                .sectionTitleStyle()
-                                .padding(.bottom)
-                              
-                            ForEach(viewModel.topNews) { newsArticle in
-                                NewsArticleRow(newsArticle: newsArticle)
+                            HListSection(title: "Top Gainers",
+                                         items: viewModel.topGainers) { coin in
+                                
+                                TopCoinCard(coin: coin)
+                                    .padding(.bottom)
+                                    .padding(.trailing, 10)
+                                    .onTapGesture { onCoinTapped(coin) }
                             }
+                            .padding(.horizontal)
                             
+                            HListSection(title: "Top Losers",
+                                         items: viewModel.topLosers) { coin in
+                                
+                                TopCoinCard(coin: coin)
+                                    .padding(.bottom)
+                                    .padding(.trailing, 10)
+                                    .onTapGesture { onCoinTapped(coin) }
+                            }
+                            .padding(.horizontal)
+                            
+                            LazyVStack(alignment: .leading) {
+                                Text("Top News")
+                                    .sectionTitleStyle()
+                                
+                                ForEach(viewModel.topNews) { newsArticle in
+                                    NewsArticleRow(newsArticle: newsArticle)
+                                }
+                            }
+                            .padding(.horizontal)
                         }
-                        .padding(.horizontal)
                     }
                 }
+                .background(Color(UIColor.systemBackground).opacity(0.95))
             }
-        
             .navigationBarHidden(true)
-            .sheet(item: $selectedCoin) { coin in
-                CoinDetailView(coin: coin)
+            .redacted(reason: viewModel.isLoading ? .placeholder : [])
+            .disabled(viewModel.isLoading)
+            .refreshable {
+                viewModel.getAll()
             }
-            .onAppear(perform: {
-                viewModel.getGlobalMarket()
-                viewModel.getNews()
-                viewModel.getTopCoins()
-                viewModel.getWatchlist()
-            })
+            .sheet(item: $selectedCoin) { coin in
+                CoinDetailView(coinGeckoId: coin.coinGeckoId, coinSymbol: coin.symbol)
+                    .environmentObject(userState)
+            }
+            .onAppear(perform: viewModel.getAll)
         }
     }
     
     // MARK: - Methods
-    
-    private func onCoinTapped(_ coin: CoinGecko.CoinMarketData) {
+    private func onCoinTapped(_ coin: CoinGecko.Coin) {
         selectedCoin = coin
     }
-    
 }
 
 struct HomeView_Previews: PreviewProvider {
@@ -103,44 +104,44 @@ struct HomeView_Previews: PreviewProvider {
     }
 }
 
-fileprivate extension HomeView {
-    
+private extension HomeView {
     struct HomeWatchlist: View {
         @State private var isWatchlistCollapsed = true
                 
         @ObservedObject var viewModel: ViewModel
+                
+        @EnvironmentObject var userState: UserState
         
-        var onCoinTapped: (CoinGecko.CoinMarketData) -> ()
-        
+        var onCoinTapped: (CoinGecko.Coin) -> Void
+
         var body: some View {
             VStack(alignment: .leading) {
                 Text("Watchlist")
                     .sectionTitleStyle()
-                    .padding(.bottom)
                 
-                if viewModel.watchlist.isEmpty {
+                if userState.watchlist.isEmpty {
                     EmptyWatchlistView()
                 } else {
-                    ForEach(isWatchlistCollapsed ? viewModel.watchlistCollapsed : viewModel.watchlist) { coin in
-                            ListingRow(listing: coin)
-                                .onTapGesture { onCoinTapped(coin) }
+                    ForEach(isWatchlistCollapsed ? Array(userState.watchlist[..<min(userState.watchlist.count, 5)]) : userState.watchlist) { coin in
+//                    ForEach(userState.watchlist) { coin in
+                        ListingRow(listing: coin)
+                            .onTapGesture { onCoinTapped(coin) }
                     }
                     .padding(.bottom, 10)
         
-                    if viewModel.watchlist.count > 5 {
+                    if userState.watchlist.count > 5 {
                         HStack {
                             Spacer()
                            
                             Button(action: toggleWatchlist) {
-                               Text(isWatchlistCollapsed ? "View More" : "View Less")
+                                Text(isWatchlistCollapsed ? "View More" : "View Less")
                             }
                             .buttonStyle(SecondaryButtonStyle())
                             
                             Spacer()
-                       }
+                        }
                     }
                 }
-                
             }
             .padding(.horizontal)
         }
@@ -154,4 +155,3 @@ fileprivate extension HomeView {
         }
     }
 }
-

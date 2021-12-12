@@ -8,9 +8,10 @@
 import Foundation
 
 extension Double {
-    func toCurrency() -> String {
+    func toCurrency(decimals: Int = 2) -> String {
         let formatter = NumberFormatter()
         formatter.numberStyle = .currency
+        formatter.maximumFractionDigits = decimals
         formatter.locale = NSLocale.current
         return formatter.string(from: self as NSNumber) ?? ""
     }
@@ -63,17 +64,17 @@ extension Double {
         }
         let units = ["", "k", "M", "B"]
         var interval = self
-        var i = 0
-        while i < units.count - 1 {
+        var index = 0
+        while index < units.count - 1 {
             if abs(interval) < 1000.0 {
                 break
             }
-            i += 1
+            index += 1
             interval /= 1000.0
         }
         // + 2 to have one digit after the comma, + 1 to not have any.
         // Remove the * and the number of digits argument to display all the digits after the comma.
-        return "\(String(format: "%0.*g", Int(log10(abs(interval))) + 2, interval)) \(units[i])"
+        return "\(String(format: "%0.*g", Int(log10(abs(interval))) + 2, interval)) \(units[index])"
     }
     
     var abbreviated: String {
@@ -88,14 +89,14 @@ extension Double {
         
         var value = self
         
-        var i = 0
+        var index = 0
         
         while value > 1_000 {
             value /= 1_000
-            i += 1
+            index += 1
         }
         
-        return "\(value.decimals(2)) \(units[i])"
+        return "\(value.decimals(2)) \(units[index])"
     }
 
     

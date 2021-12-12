@@ -5,41 +5,49 @@
 //  Created by Jason Goodney on 2/21/21.
 //
 
+import Combine
 import Foundation
 import SwiftUI
 import UIKit
-import Combine
 
-struct AsyncImage<Placeholder: View>: View {
-    @StateObject private var loader: ImageLoader
-    private let placeholder: Placeholder
-    private let image: (UIImage) -> Image
-    
-    init(
-        url: URL,
-        @ViewBuilder placeholder: () -> Placeholder,
-        @ViewBuilder image: @escaping (UIImage) -> Image = Image.init(uiImage:)
-    ) {
-        self.placeholder = placeholder()
-        self.image = image
-        _loader = StateObject(wrappedValue: ImageLoader(url: url, cache: Environment(\.imageCache).wrappedValue))
-    }
-    
-    var body: some View {
-        content
-            .onAppear(perform: loader.load)
-    }
-    
-    private var content: some View {
-        Group {
-            if loader.image != nil {
-                image(loader.image!)
-            } else {
-                placeholder
-            }
-        }
-    }
-}
+//struct AsyncImage<Placeholder: View>: View {
+//    @StateObject private var loader: ImageLoader
+//    private let placeholder: Placeholder
+//    private let image: (UIImage) -> Image
+//    private var onAppeared: ((UIImage) -> Void)?
+//    
+//    init(
+//        url: URL,
+//        @ViewBuilder placeholder: () -> Placeholder,
+//        @ViewBuilder image: @escaping (UIImage) -> Image = Image.init(uiImage:),
+//        onAppeared: ((UIImage) -> Void)? = nil
+//    ) {
+//        self.placeholder = placeholder()
+//        self.image = image
+//        _loader = StateObject(wrappedValue: ImageLoader(url: url, cache: Environment(\.imageCache).wrappedValue))
+//        self.onAppeared = onAppeared
+//    }
+//    
+//    var body: some View {
+//        content
+//            .onAppear(perform: {
+//                loader.load()
+//                loader.image.map {
+//                    onAppeared?($0)
+//                }
+//            })
+//    }
+//    
+//    private var content: some View {
+//        Group {
+//            if loader.image != nil {
+//                image(loader.image!)
+//            } else {
+//                placeholder
+//            }
+//        }
+//    }
+//}
 
 protocol ImageCache {
     subscript(_ url: URL) -> UIImage? { get set }
@@ -119,5 +127,35 @@ extension EnvironmentValues {
     var imageCache: ImageCache {
         get { self[ImageCacheKey.self] }
         set { self[ImageCacheKey.self] = newValue }
+    }
+}
+
+public extension View {
+    // This function changes our View to UIView, then calls another function
+    // to convert the newly-made UIView to a UIImage.
+    func asUIImage() -> UIImage {
+        let controller = UIHostingController(rootView: self)
+        
+        controller.view.frame = CGRect(x: 0, y: CGFloat(Int.max), width: 1, height: 1)
+        UIApplication.shared.windows.first!.rootViewController?.view.addSubview(controller.view)
+        
+        let size = controller.sizeThatFits(in: UIScreen.main.bounds.size)
+        controller.view.bounds = CGRect(origin: .zero, size: size)
+        controller.view.sizeToFit()
+        
+        // here is the call to the function that converts UIView to UIImage: `.asImage()`
+        let image = controller.view.asUIImage()
+        controller.view.removeFromSuperview()
+        return image
+    }
+}
+
+public extension UIView {
+    // This is the function to convert UIView to UIImage
+    func asUIImage() -> UIImage {
+        let renderer = UIGraphicsImageRenderer(bounds: bounds)
+        return renderer.image { rendererContext in
+            layer.render(in: rendererContext.cgContext)
+        }
     }
 }

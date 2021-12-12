@@ -7,7 +7,7 @@
 
 import SwiftUI
 
-struct NavigationBarTitleView: View {
+struct TodaysDateTitle: View {
     
     private var todaysDate: String {
             let date = Date()
@@ -18,9 +18,6 @@ struct NavigationBarTitleView: View {
     
     var body: some View {
         VStack(alignment: .leading) {
-//            Text("CCX Monitor")
-//                .fontWeight(.black)
-//
             Text(todaysDate)
                 .font(.title)
                 .fontWeight(.black)
@@ -31,6 +28,6 @@ struct NavigationBarTitleView: View {
 
 struct NavigationBarTitleView_Previews: PreviewProvider {
     static var previews: some View {
-        NavigationBarTitleView()
+        TodaysDateTitle()
     }
 }

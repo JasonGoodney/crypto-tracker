@@ -11,7 +11,7 @@ struct PercentChangeLabel: View {
     
     private let value: Double
     
-    private var font: Font? = nil
+    private var font: Font?
     
     private var isPositive: Bool {
         value > 0
@@ -21,9 +21,9 @@ struct PercentChangeLabel: View {
         value == 0
     }
     
-    private let neutralArrow = "arrow.right"
+    private let neutralArrow = "arrowtriangle.right.fill"
     
-    private let positiveArrow = "arrowtriangle.up.fill"//"arrow.up.right"
+    private let positiveArrow = "arrowtriangle.up.fill"
     
     private let negativeArrow = "arrowtriangle.down.fill"
     

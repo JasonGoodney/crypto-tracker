@@ -5,43 +5,78 @@
 //  Created by Jason Goodney on 3/5/21.
 //
 
-import Foundation
 import Combine
+import Foundation
 
 extension CoinDetailView {
-    
     class ViewModel: ObservableObject {
-        
         // MARK: - Properties
             
+        let coinGeckoId: String
+        private let coinSymbol: String
+        
         private var subscriptions = Set<AnyCancellable>()
         
-//        var isInWatchlist: Bool {
-//            let watchlist = UserDefaults.standard.value(for: .watchlist) as? [String] ?? []
-//
-//            return watchlist.contains(coin.marketData.coinGeckoId.lowercased())
-//        }
+        private let dispatchGroup = DispatchGroup()
+                
+        @Published private(set) var coin: CoinGecko.Coin?
         
-        @Published private(set) var coin: CoinGecko.Coin
+        @Published private(set) var coinPlusPlus: CoinGecko.CoinPlusPlus?
         
-        @Published private(set) var topNews: [CryptoPanic.NewsArticle] = []
+        @Published private(set) var topNews: [CryptoPanic.NewsArticle]?
         
         @Published var isInWatchlist = false
         
-        init(coin: CoinGecko.CoinMarketData) {
-            self.coin = CoinGecko.Coin(marketData: coin)
+        @Published private(set) var isLoading = false
+        
+        init(coinGeckoId: String, coinSymbol: String) {
+            self.coinGeckoId = coinGeckoId
+            self.coinSymbol = coinSymbol
         }
         
         // MARK: - Methods
-        func loadFromUserDefaults () {
-            let watchlist = UserDefaults.standard.value(for: .watchlist) as? [String] ?? []
-            let id = coin.marketData.coinGeckoId.lowercased()
-            isInWatchlist = watchlist.contains(id)
+
+        func getAll() {
+            isLoading = true
+            
+            getCoin(for: coinGeckoId)
+            getCoinPlusPlus()
+            getNews()
+            getMarketChart(for: "bitcoin")
+         
+            dispatchGroup.notify(queue: .main) { [weak self] in
+                self?.isLoading = false
+            }
         }
         
-        func getCoin() {
+        func getMarketChart(for id: String) {
+            dispatchGroup.enter()
+            
             DataLoader<CoinGeckoAPI>()
-                .request(CoinGecko.CoinInfo.self, from: .coin(coin.marketData.coinGeckoId))
+                .request(CoinGecko.Prices.self, from: .marketChart(for: id, days: 7))
+                .sink(receiveCompletion: onReceive) { prices in
+                    print(prices)
+                }
+                .store(in: &subscriptions)
+        }
+        
+        func getCoin(for id: String) {
+            dispatchGroup.enter()
+            
+            DataLoader<CoinGeckoAPI>()
+                .request([CoinGecko.Coin].self, from: .coins(.markets, ids: [id]))
+                .sink(receiveCompletion: onReceive) { [weak self] coins in
+                    self?.coin = coins.first
+                }
+                .store(in: &subscriptions)
+                
+        }
+        
+        func getCoinPlusPlus() {
+            dispatchGroup.enter()
+            
+            DataLoader<CoinGeckoAPI>()
+                .request(CoinGecko.CoinPlusPlus.self, from: .coin(coinGeckoId))
                 .sink(
                     receiveCompletion: onReceive,
                     receiveValue: onReceive)
@@ -49,24 +84,27 @@ extension CoinDetailView {
         }
         
         func getNews() {
+            dispatchGroup.enter()
+            
             DataLoader<CryptoPanicAPI>()
                 .request(CryptoPanic.Root.self,
-                         from: .posts(currencies: [coin.marketData.symbol]))
+                         from: .posts(currencies: [coinSymbol]))
                 .sink(receiveCompletion: onReceive,
                       receiveValue: { [weak self] root in
-                        if root.results.count > 5 {
-                            self?.topNews = Array(root.results[..<5])
-                            
-                        } else {
-                            self?.topNews = root.results
-                        }
-                        
-                      }
-                )
+                          if root.results.isEmpty {
+                              self?.topNews = nil
+                          } else if root.results.count > 5 {
+                              self?.topNews = Array(root.results[..<5])
+                          } else {
+                              self?.topNews = root.results
+                          }
+                      })
                 .store(in: &subscriptions)
         }
         
         private func onReceive(_ completion: Subscribers.Completion<NetworkError>) {
+            dispatchGroup.leave()
+            
             switch completion {
             case .finished:
                 break
@@ -75,11 +113,8 @@ extension CoinDetailView {
             }
         }
         
-        private func onReceive(_ info: CoinGecko.CoinInfo) {
-            coin.info = info
+        private func onReceive(_ coinPlusPlus: CoinGecko.CoinPlusPlus) {
+            self.coinPlusPlus = coinPlusPlus
         }
-        
     }
-    
-    
 }

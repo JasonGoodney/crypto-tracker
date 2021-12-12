@@ -32,9 +32,9 @@ extension CoinGeckoAPI {
     
     static func coin(_ id: String) -> CoinGeckoAPI {
         return CoinGeckoAPI(
-            path: "/coins/\(id)",
+            path: "coins/\(id)",
             queryItems: [
-                URLQueryItem(name: "tickers", value: "false"),
+                URLQueryItem(name: "tickers", value: "false")
             ])
     }
     
@@ -65,6 +65,19 @@ extension CoinGeckoAPI {
     
     static func global() -> CoinGeckoAPI {
         return CoinGeckoAPI(path: "global")
+    }
+    
+    static func allCoins() -> CoinGeckoAPI {
+        return CoinGeckoAPI(path: "coins/list")
+    }
+    
+    static func marketChart(for coinId: String, vsCurrency: String = "usd", days: Int) -> CoinGeckoAPI {
+        return CoinGeckoAPI(path: "coins/\(coinId)/market_chart",
+                            queryItems: [
+                                URLQueryItem(name: "id", value: coinId),
+                                URLQueryItem(name: "vs_currency", value: vsCurrency),
+                                URLQueryItem(name: "days", value: "\(days)"),
+                            ])
     }
 }
 

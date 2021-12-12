@@ -13,6 +13,7 @@ extension CryptoPanic.NewsArticle {
         case twitter = "twitter.com"
         case reddit = "reddit.com"
         case coinTelegraph = "cointelegraph.com"
+        case cryptoGlobe = "cryptoglobe.com"
         
         static func from(_ domainString: String) -> DomainType {
             switch domainString {
@@ -22,6 +23,8 @@ extension CryptoPanic.NewsArticle {
                 return .reddit
             case DomainType.coinTelegraph.rawValue:
                 return .coinTelegraph
+            case DomainType.cryptoGlobe.rawValue:
+                return .cryptoGlobe
             default:
                 return .normal
             }
